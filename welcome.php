@@ -3,47 +3,76 @@
 
 Welcome <?php echo $_POST["firstname"]; ?><br>
 Your Email adress is: <?php echo $_POST["email"];
-$servername="localhost";
-$username="root";
-$password="";
-$dbname="mydb";
+$servername="ec2-18-215-41-121.compute-1.amazonaws.com";
+$username="dmfwzibrvribxm";
+$password="19b3c3236f7333fc9107fa999ea23b7a0a816ef8f4407de0c2fc634e9cb136d8";
+$port="5432"
+$dbname="dcsf901b1lq6v2";
 $firstname=$_POST["firstname"];
 $lastname=$_POST["lastname"];
 $email=$_POST["email"];
 
-//Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
-//Check connection
-if ($conn->connect_error) {
-    die("Connection failed:".$conn->connect_error);
+try {
+  $conn = new PDO("pgsql:host=$servername;port=$port;dbname=$dbname", $username, $password);
+  // set the PDO error mode to exception
+  $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+  // prepare sql and bind parameters
+  $stmt = $conn->prepare("INSERT INTO MyGuests (firstname, lastname, email)
+  VALUES (:firstname, :lastname, :email)");
+  $stmt->bindParam(':firstname', $firstname);
+  $stmt->bindParam(':lastname', $lastname);
+  $stmt->bindParam(':email', $email);
+
+  $stmt->execute();
+
+  echo "New records created successfully";
+} catch(PDOException $e) {
+  echo "Error: " . $e->getMessage();
+}
+echo "<table style='border: solid 1px black;'>";
+echo "<tr><th>Id</th><th>Firstname</th><th>Lastname</th></tr>";
+
+class TableRows extends RecursiveIteratorIterator {
+  function __construct($it) {
+    parent::__construct($it, self::LEAVES_ONLY);
+  }
+
+  function current() {
+    return "<td style='width:150px;border:1px solid black;'>" . parent::current(). "</td>";
+  }
+
+  function beginChildren() {
+    echo "<tr>";
+  }
+
+  function endChildren() {
+    echo "</tr>" . "\n";
+  }
 }
 
-$sql = "INSERT INTO MYGuests (firstname, lastname, email)
-VALUES ('$firstname', '$lastname', '$email');";
+$servername = "localhost";
+$username = "username";
+$password = "password";
+$dbname = "myDBPDO";
 
-if($conn->query($sql) === TRUE){
-    echo "New records created succesfully";
-} else {
-    echo "Error: ". $sql . "<br>" . $conn->error;
-}
+try {
+  $conn = new PDO("pgsql:host=$servername;port=$port;dbname=$dbname", $username, $password);
+  $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+  $stmt = $conn->prepare("SELECT id, firstname, lastname FROM MyGuests");
+  $stmt->execute();
 
-$conn = new mysqli ($servername, $username, $password, $dbname);
-$sql=  "SELECT id, firstname, lastname FROM MyGuests";
-$result=$conn->query($sql);
-if($result->num_rows>0){
-    //output data of each row
-    while($row=$result->fetch_assoc()) {
-        echo "id:" . $row["id"]. "-Name:" . $row["firstname"]." " . $row["lastname"]. "<br>";
-    }
-} else {
-    echo "0 results";
+  // set the resulting array to associative
+  $result = $stmt->setFetchMode(PDO::FETCH_ASSOC);
+  foreach(new TableRows(new RecursiveArrayIterator($stmt->fetchAll())) as $k=>$v) {
+    echo $v;
+  }
+} catch(PDOException $e) {
+  echo "Error: " . $e->getMessage();
 }
-$conn->close();
+$conn = null;
+echo "</table>";
 ?>
-<a href="http://localhost/tess.php">hapus</a>
-<a href="http://localhost/tambahdata.php">tambah</a>
-?>
-
-
+    
 <body>
 </html>
